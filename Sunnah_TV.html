@@ -19,11 +19,13 @@
       overflow: hidden;
     }
 
-    /* Sits in the same corner as the channel's own on-screen clock */
+    /* Sits just left of the channel's own on-screen clock.
+       Measured on an actual 1920x1080 broadcast frame: their clock digits
+       span x=1716-1784, so our right edge is set to clear x=1716. */
     .clock-widget {
       position: fixed;
-      bottom: 2vh;
-      right: 2vw;
+      bottom: 28px;
+      right: 235px;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -39,7 +41,7 @@
     }
 
     .clock-value {
-      font-size: 34px;
+      font-size: 30px;
       font-weight: 800;
       color: #FFFFFF;
       line-height: 1;
@@ -50,7 +52,7 @@
 </head>
 <body>
 
-  <div class="clock-widget">
+  <div class="clock-widget" id="widget">
     <span class="prayer-label" id="prayerLabel">المتبقي لأذان...</span>
     <span class="clock-value" id="clockValue">--:--</span>
   </div>
@@ -64,12 +66,13 @@
     const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     const PRAYER_NAMES = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 
+    const widgetEl = document.getElementById('widget');
     const labelEl = document.getElementById('prayerLabel');
     const valueEl = document.getElementById('clockValue');
 
     let schedule = [];       // today's 5 prayers + tomorrow's Fajr, as real Date instants
     let scheduleDateKey = null;
-    let phase = 'prayer';    // 'prayer' (5s) alternates with 'time' (10s)
+    let visible = true;      // blinks on/off every 5s
 
     // Saudi Arabia has a fixed UTC+3 offset with no DST, so "Riyadh wall-clock"
     // is just UTC + 3h read back with the UTC getters.
@@ -142,31 +145,15 @@
     }
 
     function render() {
-      if (phase === 'prayer') {
-        const next = getNextPrayer();
-        if (next) {
-          const totalMin = Math.max(0, Math.floor((next.date.getTime() - Date.now()) / 60000));
-          labelEl.textContent = `المتبقي لأذان ${next.label}`;
-          labelEl.style.visibility = 'visible';
-          valueEl.textContent = `${pad2(Math.floor(totalMin / 60))}:${pad2(totalMin % 60)}`;
-        } else {
-          labelEl.style.visibility = 'hidden';
-          valueEl.textContent = '--:--';
-        }
+      const next = getNextPrayer();
+      if (next) {
+        const totalMin = Math.max(0, Math.floor((next.date.getTime() - Date.now()) / 60000));
+        labelEl.textContent = `المتبقي لأذان ${next.label}`;
+        valueEl.textContent = `${pad2(Math.floor(totalMin / 60))}:${pad2(totalMin % 60)}`;
       } else {
-        labelEl.style.visibility = 'hidden';
-        const p = getRiyadhParts();
-        valueEl.textContent = `${pad2(p.hour)}:${pad2(p.minute)}`;
+        labelEl.textContent = '';
+        valueEl.textContent = '--:--';
       }
-    }
-
-    function scheduleNextPhase() {
-      const duration = phase === 'time' ? 10000 : 5000;
-      setTimeout(() => {
-        phase = (phase === 'time') ? 'prayer' : 'time';
-        render();
-        scheduleNextPhase();
-      }, duration);
     }
 
     buildSchedule().then(render);
@@ -177,7 +164,10 @@
       render();
     }, 1000);
 
-    scheduleNextPhase();
+    setInterval(() => {
+      visible = !visible;
+      widgetEl.style.display = visible ? 'flex' : 'none';
+    }, 5000);
   </script>
 </body>
 </html>
