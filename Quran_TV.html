@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>Quran TV Channel - Athan Countdown Widget</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Tajawal', sans-serif;
+    }
+
+    html, body {
+      background: transparent; /* Transparent for live-stream overlay use */
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sits in the same corner as the channel's own on-screen clock */
+    .clock-widget {
+      position: fixed;
+      bottom: 2vh;
+      right: 2vw;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .prayer-label {
+      font-size: 18px;
+      font-weight: 700;
+      color: #E9C14D;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      margin-bottom: 2px;
+      white-space: nowrap;
+    }
+
+    .clock-value {
+      font-size: 34px;
+      font-weight: 800;
+      color: #FFFFFF;
+      line-height: 1;
+      direction: ltr;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="clock-widget">
+    <span class="prayer-label" id="prayerLabel">المتبقي لأذان...</span>
+    <span class="clock-value" id="clockValue">--:--</span>
+  </div>
+
+  <script>
+    // Masjid al-Haram, Makkah
+    const LAT = 21.4225;
+    const LON = 39.8262;
+    const METHOD = 4; // Umm Al-Qura University, Makkah (official Saudi calculation)
+
+    const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    const PRAYER_NAMES = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
+
+    const labelEl = document.getElementById('prayerLabel');
+    const valueEl = document.getElementById('clockValue');
+
+    let schedule = [];       // today's 5 prayers + tomorrow's Fajr, as real Date instants
+    let scheduleDateKey = null;
+    let phase = 'prayer';    // 'prayer' (5s) alternates with 'time' (10s)
+
+    // Saudi Arabia has a fixed UTC+3 offset with no DST, so "Riyadh wall-clock"
+    // is just UTC + 3h read back with the UTC getters.
+    function getRiyadhParts(date = new Date()) {
+      const shifted = new Date(date.getTime() + 3 * 3600 * 1000);
+      return {
+        year: shifted.getUTCFullYear(),
+        month: shifted.getUTCMonth() + 1,
+        day: shifted.getUTCDate(),
+        hour: shifted.getUTCHours(),
+        minute: shifted.getUTCMinutes(),
+        weekday: shifted.getUTCDay() // 0=Sunday ... 5=Friday
+      };
+    }
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+
+    function toApiDateStr(p) { return `${pad2(p.day)}-${pad2(p.month)}-${p.year}`; }
+
+    function riyadhToUTCDate(year, month, day, hour, minute) {
+      return new Date(Date.UTC(year, month - 1, day, hour - 3, minute, 0));
+    }
+
+    function parseHM(str) {
+      const [h, m] = str.split(' ')[0].split(':').map(Number);
+      return { h, m };
+    }
+
+    async function fetchTimings(dateStr) {
+      const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${LAT}&longitude=${LON}&method=${METHOD}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      return json.data.timings;
+    }
+
+    async function buildSchedule() {
+      const today = getRiyadhParts();
+      const tomorrow = getRiyadhParts(new Date(Date.now() + 86400000));
+      const todayStr = toApiDateStr(today);
+      const tomorrowStr = toApiDateStr(tomorrow);
+
+      try {
+        const [todayT, tomorrowT] = await Promise.all([fetchTimings(todayStr), fetchTimings(tomorrowStr)]);
+        const isFridayToday = today.weekday === 5;
+
+        const list = PRAYER_KEYS.map(key => {
+          const { h, m } = parseHM(todayT[key]);
+          return {
+            label: (key === 'Dhuhr' && isFridayToday) ? 'الجمعة' : PRAYER_NAMES[key],
+            date: riyadhToUTCDate(today.year, today.month, today.day, h, m)
+          };
+        });
+
+        const fajrTom = parseHM(tomorrowT.Fajr);
+        list.push({
+          label: PRAYER_NAMES.Fajr,
+          date: riyadhToUTCDate(tomorrow.year, tomorrow.month, tomorrow.day, fajrTom.h, fajrTom.m)
+        });
+
+        schedule = list;
+        scheduleDateKey = todayStr;
+      } catch (err) {
+        console.error('Prayer times fetch failed:', err);
+      }
+    }
+
+    function getNextPrayer() {
+      const now = Date.now();
+      return schedule.find(p => p.date.getTime() > now) || null;
+    }
+
+    function render() {
+      if (phase === 'prayer') {
+        const next = getNextPrayer();
+        if (next) {
+          const totalMin = Math.max(0, Math.floor((next.date.getTime() - Date.now()) / 60000));
+          labelEl.textContent = `المتبقي لأذان ${next.label}`;
+          labelEl.style.visibility = 'visible';
+          valueEl.textContent = `${pad2(Math.floor(totalMin / 60))}:${pad2(totalMin % 60)}`;
+        } else {
+          labelEl.style.visibility = 'hidden';
+          valueEl.textContent = '--:--';
+        }
+      } else {
+        labelEl.style.visibility = 'hidden';
+        const p = getRiyadhParts();
+        valueEl.textContent = `${pad2(p.hour)}:${pad2(p.minute)}`;
+      }
+    }
+
+    function scheduleNextPhase() {
+      const duration = phase === 'time' ? 10000 : 5000;
+      setTimeout(() => {
+        phase = (phase === 'time') ? 'prayer' : 'time';
+        render();
+        scheduleNextPhase();
+      }, duration);
+    }
+
+    buildSchedule().then(render);
+
+    setInterval(() => {
+      const todayStr = toApiDateStr(getRiyadhParts());
+      if (todayStr !== scheduleDateKey) buildSchedule();
+      render();
+    }, 1000);
+
+    scheduleNextPhase();
+  </script>
+</body>
+</html>
