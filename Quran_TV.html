@@ -19,42 +19,65 @@
       overflow: hidden;
     }
 
-    /* Sits just left of the channel's own on-screen clock.
-       Measured on an actual 1920x1080 broadcast frame: their clock digits
-       span x=1716-1784, so our right edge is set to clear x=1716. */
+    /* Mirror of the channel's own clock badge: same size, positioned
+       immediately left of it. Measured on an actual 1920x1080 broadcast
+       frame: their badge spans x=1623-1807, y=997-1054. */
     .clock-widget {
       position: fixed;
-      bottom: 28px;
-      right: 235px;
+      bottom: 26px;
+      right: 305px;
+      height: 56px;
+      width: 184px;
+      background: linear-gradient(180deg, rgba(210,210,210,0.55) 0%, rgba(160,160,160,0.55) 100%);
+      clip-path: polygon(0% 0%, 100% 0%, 78% 100%, 0% 100%);
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     }
 
-    .prayer-label {
-      font-size: 18px;
+    .label-top {
+      font-size: 14px;
       font-weight: 700;
       color: #FFFFFF;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-      margin-bottom: 2px;
       white-space: nowrap;
+      margin-bottom: 3px;
+      text-shadow: 0 1px 3px rgba(60, 60, 60, 0.85);
+    }
+
+    .row2 {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .prayer-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+      white-space: nowrap;
+      text-shadow: 0 1px 3px rgba(60, 60, 60, 0.85);
     }
 
     .clock-value {
-      font-size: 30px;
+      font-size: 24px;
       font-weight: 800;
       color: #FFFFFF;
-      line-height: 1;
       direction: ltr;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      text-shadow: 0 1px 3px rgba(60, 60, 60, 0.85);
     }
   </style>
 </head>
 <body>
 
   <div class="clock-widget" id="widget">
-    <span class="prayer-label" id="prayerLabel">المتبقي لأذان...</span>
-    <span class="clock-value" id="clockValue">--:--</span>
+    <span class="label-top">متبقي من الوقت لأذان</span>
+    <span class="row2">
+      <span class="prayer-name" id="prayerLabel"></span>
+      <span class="clock-value" id="clockValue">--:--</span>
+    </span>
   </div>
 
   <script>
@@ -146,7 +169,7 @@
       const next = getNextPrayer();
       if (next) {
         const totalMin = Math.max(0, Math.floor((next.date.getTime() - Date.now()) / 60000));
-        labelEl.textContent = `المتبقي لأذان ${next.label}`;
+        labelEl.textContent = next.label;
         valueEl.textContent = `${pad2(Math.floor(totalMin / 60))}:${pad2(totalMin % 60)}`;
       } else {
         labelEl.textContent = '';
