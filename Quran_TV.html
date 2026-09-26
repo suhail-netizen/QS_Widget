@@ -19,17 +19,20 @@
       overflow: hidden;
     }
 
-    /* Mirror of the channel's own clock badge: same size, positioned
-       immediately left of it. Measured directly from recorded broadcast
-       frames of both channels and unified to y=990-1050 (height 60px). */
+    /* Traced from an actual broadcast frame: the channel's own clock badge
+       is a parallelogram at x=1595-1810, y=988-1053 (width 215, height 65),
+       with its cut edge running from 72% of the width (top) to the sharp
+       point at the bottom-left corner. This is that exact shape rotated
+       180 degrees (flip both axes), positioned so its point touches theirs
+       at x=1595, forming one continuous shape flanking the clock. */
     .clock-widget {
       position: fixed;
-      bottom: 30px;
-      right: 305px;
-      height: 60px;
-      width: 184px;
+      bottom: 27px;
+      right: 325px;
+      height: 65px;
+      width: 215px;
       background: linear-gradient(180deg, rgba(210,210,210,0.55) 0%, rgba(160,160,160,0.55) 100%);
-      clip-path: polygon(0% 0%, 100% 0%, 78% 100%, 0% 100%);
+      clip-path: polygon(0% 0%, 100% 0%, 72% 100%, 0% 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
