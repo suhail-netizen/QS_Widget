@@ -77,7 +77,7 @@
 <body>
 
   <div class="clock-widget" id="widget">
-    <span class="label-top">متبقي من الوقت لأذان</span>
+    <span class="label-top" id="labelTop">متبقي من الوقت لأذان</span>
     <span class="row2">
       <span class="prayer-name" id="prayerLabel"></span>
       <span class="clock-value" id="clockValue">--:--</span>
@@ -93,12 +93,14 @@
     const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     const PRAYER_NAMES = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 
+    const labelTopEl = document.getElementById('labelTop');
     const labelEl = document.getElementById('prayerLabel');
     const valueEl = document.getElementById('clockValue');
 
     let TIMES = {};          // "YYYY-MM-DD" -> { weekday, Fajr, Dhuhr, Asr, Maghrib, Isha }
     let schedule = [];       // today's 5 prayers + tomorrow's Fajr, as real Date instants
     let scheduleDateKey = null;
+    let scene = 1;            // 1 = countdown, 2 = athan clock time — alternates every 10s
 
     // Saudi Arabia has a fixed UTC+3 offset with no DST, so "Riyadh wall-clock"
     // is just UTC + 3h read back with the UTC getters.
@@ -107,7 +109,9 @@
       return {
         year: shifted.getUTCFullYear(),
         month: shifted.getUTCMonth() + 1,
-        day: shifted.getUTCDate()
+        day: shifted.getUTCDate(),
+        hour: shifted.getUTCHours(),
+        minute: shifted.getUTCMinutes()
       };
     }
 
@@ -173,13 +177,23 @@
 
     function render() {
       const next = getNextPrayer();
-      if (next) {
-        const totalMin = Math.max(0, Math.floor((next.date.getTime() - Date.now()) / 60000));
-        labelEl.textContent = next.label;
-        valueEl.textContent = `${pad2(Math.floor(totalMin / 60))}:${pad2(totalMin % 60)}`;
-      } else {
+      if (!next) {
+        labelTopEl.textContent = '';
         labelEl.textContent = '';
         valueEl.textContent = '--:--';
+        return;
+      }
+
+      labelEl.textContent = next.label;
+
+      if (scene === 1) {
+        const totalMin = Math.max(0, Math.floor((next.date.getTime() - Date.now()) / 60000));
+        labelTopEl.textContent = 'متبقي من الوقت لأذان';
+        valueEl.textContent = `${pad2(Math.floor(totalMin / 60))}:${pad2(totalMin % 60)}`;
+      } else {
+        const hm = getRiyadhParts(next.date);
+        labelTopEl.textContent = 'وقت أذان';
+        valueEl.textContent = `${pad2(hm.hour)}:${pad2(hm.minute)}`;
       }
     }
 
@@ -193,6 +207,11 @@
       if (todayKey !== scheduleDateKey) buildSchedule();
       render();
     }, 1000);
+
+    setInterval(() => {
+      scene = (scene === 1) ? 2 : 1;
+      render();
+    }, 10000);
   </script>
 </body>
 </html>
