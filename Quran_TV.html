@@ -66,13 +66,11 @@
     const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     const PRAYER_NAMES = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 
-    const widgetEl = document.getElementById('widget');
     const labelEl = document.getElementById('prayerLabel');
     const valueEl = document.getElementById('clockValue');
 
     let schedule = [];       // today's 5 prayers + tomorrow's Fajr, as real Date instants
     let scheduleDateKey = null;
-    let visible = true;      // blinks on/off every 5s
 
     // Saudi Arabia has a fixed UTC+3 offset with no DST, so "Riyadh wall-clock"
     // is just UTC + 3h read back with the UTC getters.
@@ -163,11 +161,6 @@
       if (todayStr !== scheduleDateKey) buildSchedule();
       render();
     }, 1000);
-
-    setInterval(() => {
-      visible = !visible;
-      widgetEl.style.display = visible ? 'flex' : 'none';
-    }, 5000);
   </script>
 </body>
 </html>
