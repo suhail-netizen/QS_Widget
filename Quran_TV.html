@@ -20,13 +20,13 @@
     }
 
     /* Mirror of the channel's own clock badge: same size, positioned
-       immediately left of it. Measured on an actual 1920x1080 broadcast
-       frame: their badge spans x=1623-1807, y=997-1054. */
+       immediately left of it. Measured directly from recorded broadcast
+       frames of both channels and unified to y=990-1050 (height 60px). */
     .clock-widget {
       position: fixed;
-      bottom: 26px;
+      bottom: 30px;
       right: 305px;
-      height: 56px;
+      height: 60px;
       width: 184px;
       background: linear-gradient(180deg, rgba(210,210,210,0.55) 0%, rgba(160,160,160,0.55) 100%);
       clip-path: polygon(0% 0%, 100% 0%, 78% 100%, 0% 100%);
