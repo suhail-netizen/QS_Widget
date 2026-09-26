@@ -38,6 +38,10 @@
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     }
 
+    .clock-widget > * {
+      transform: translateX(-8px);
+    }
+
     .label-top {
       font-size: 14px;
       font-weight: 700;
@@ -81,10 +85,10 @@
   </div>
 
   <script>
-    // Masjid an-Nabawi, Madinah
-    const LAT = 24.4672;
-    const LON = 39.6112;
-    const METHOD = 4; // Umm Al-Qura University, Makkah (official Saudi calculation)
+    // Masjid an-Nabawi, Madinah — data pre-fetched from Aladhan (Umm Al-Qura
+    // method) for Hijri 1448-1449, served locally so nothing is loaded
+    // from a public API at broadcast time.
+    const DATA_FILES = ['madinah_1448.json', 'madinah_1449.json'];
 
     const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     const PRAYER_NAMES = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
@@ -92,6 +96,7 @@
     const labelEl = document.getElementById('prayerLabel');
     const valueEl = document.getElementById('clockValue');
 
+    let TIMES = {};          // "YYYY-MM-DD" -> { weekday, Fajr, Dhuhr, Asr, Maghrib, Isha }
     let schedule = [];       // today's 5 prayers + tomorrow's Fajr, as real Date instants
     let scheduleDateKey = null;
 
@@ -102,62 +107,63 @@
       return {
         year: shifted.getUTCFullYear(),
         month: shifted.getUTCMonth() + 1,
-        day: shifted.getUTCDate(),
-        hour: shifted.getUTCHours(),
-        minute: shifted.getUTCMinutes(),
-        weekday: shifted.getUTCDay() // 0=Sunday ... 5=Friday
+        day: shifted.getUTCDate()
       };
     }
 
     function pad2(n) { return String(n).padStart(2, '0'); }
 
-    function toApiDateStr(p) { return `${pad2(p.day)}-${pad2(p.month)}-${p.year}`; }
+    function dateKey(p) { return `${p.year}-${pad2(p.month)}-${pad2(p.day)}`; }
 
     function riyadhToUTCDate(year, month, day, hour, minute) {
       return new Date(Date.UTC(year, month - 1, day, hour - 3, minute, 0));
     }
 
     function parseHM(str) {
-      const [h, m] = str.split(' ')[0].split(':').map(Number);
+      const [h, m] = str.split(':').map(Number);
       return { h, m };
     }
 
-    async function fetchTimings(dateStr) {
-      const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${LAT}&longitude=${LON}&method=${METHOD}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      return json.data.timings;
+    async function loadData() {
+      const merged = {};
+      for (const file of DATA_FILES) {
+        const res = await fetch(file);
+        Object.assign(merged, await res.json());
+      }
+      TIMES = merged;
     }
 
-    async function buildSchedule() {
+    function buildSchedule() {
       const today = getRiyadhParts();
       const tomorrow = getRiyadhParts(new Date(Date.now() + 86400000));
-      const todayStr = toApiDateStr(today);
-      const tomorrowStr = toApiDateStr(tomorrow);
+      const todayKey = dateKey(today);
+      const tomorrowKey = dateKey(tomorrow);
 
-      try {
-        const [todayT, tomorrowT] = await Promise.all([fetchTimings(todayStr), fetchTimings(tomorrowStr)]);
-        const isFridayToday = today.weekday === 5;
-
-        const list = PRAYER_KEYS.map(key => {
-          const { h, m } = parseHM(todayT[key]);
-          return {
-            label: (key === 'Dhuhr' && isFridayToday) ? 'الجمعة' : PRAYER_NAMES[key],
-            date: riyadhToUTCDate(today.year, today.month, today.day, h, m)
-          };
-        });
-
-        const fajrTom = parseHM(tomorrowT.Fajr);
-        list.push({
-          label: PRAYER_NAMES.Fajr,
-          date: riyadhToUTCDate(tomorrow.year, tomorrow.month, tomorrow.day, fajrTom.h, fajrTom.m)
-        });
-
-        schedule = list;
-        scheduleDateKey = todayStr;
-      } catch (err) {
-        console.error('Prayer times fetch failed:', err);
+      const todayT = TIMES[todayKey];
+      const tomorrowT = TIMES[tomorrowKey];
+      if (!todayT || !tomorrowT) {
+        console.error('No local prayer-time data for', todayKey, 'or', tomorrowKey);
+        return;
       }
+
+      const isFridayToday = todayT.weekday === 'Friday';
+
+      const list = PRAYER_KEYS.map(key => {
+        const { h, m } = parseHM(todayT[key]);
+        return {
+          label: (key === 'Dhuhr' && isFridayToday) ? 'الجمعة' : PRAYER_NAMES[key],
+          date: riyadhToUTCDate(today.year, today.month, today.day, h, m)
+        };
+      });
+
+      const fajrTom = parseHM(tomorrowT.Fajr);
+      list.push({
+        label: PRAYER_NAMES.Fajr,
+        date: riyadhToUTCDate(tomorrow.year, tomorrow.month, tomorrow.day, fajrTom.h, fajrTom.m)
+      });
+
+      schedule = list;
+      scheduleDateKey = todayKey;
     }
 
     function getNextPrayer() {
@@ -177,11 +183,14 @@
       }
     }
 
-    buildSchedule().then(render);
+    loadData().then(() => {
+      buildSchedule();
+      render();
+    });
 
     setInterval(() => {
-      const todayStr = toApiDateStr(getRiyadhParts());
-      if (todayStr !== scheduleDateKey) buildSchedule();
+      const todayKey = dateKey(getRiyadhParts());
+      if (todayKey !== scheduleDateKey) buildSchedule();
       render();
     }, 1000);
   </script>
