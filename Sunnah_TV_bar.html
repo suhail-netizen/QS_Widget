@@ -19,17 +19,22 @@
       overflow: hidden;
     }
 
-    /* Horizontal-strip layout: one line along the bottom, no background box.
+    /* Horizontal-strip layout: one line along the bottom.
        Centred on the screen: the canvas is 1920px wide, so the middle is x=960
-       (590px wide, so left = 960 - 295; nudged +2px so the visible text, not the box, sits on 960). The lower-middle box above is
-       centred at about x=955, so this also sits under it. About 30px is free below
-       the box. Reading order (right to left): label, prayer name, time. */
+       (590px wide, so left = 960 - 295; nudged +2px so the visible text, not the box,
+       sits on 960). The lower-middle box above is centred at about x=955, so this also
+       sits under it. About 30px is free below the box, which limits the text to about
+       28px tall (label 21 / name 24 / time 28).
+       Legibility on bright video: a dark band behind the text that fades to fully
+       transparent at both ends, so it never reads as a box.
+       Reading order (right to left): label, prayer name, time. */
     .clock-widget {
       position: fixed;
       left: 667px;
       width: 590px;
       bottom: 2px;
       height: 28px;
+      background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.62) 18%, rgba(0,0,0,0.62) 82%, rgba(0,0,0,0) 100%);
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -43,29 +48,28 @@
       display: contents;
     }
 
-    /* No box behind the text, so a dark outline keeps it readable on any video. */
     .label-top {
-      font-size: 18px;
-      font-weight: 700;
-      color: #FFFFFF;
-      white-space: nowrap;
-      text-shadow: 0 0 3px rgba(0, 0, 0, 0.95), 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6);
-    }
-
-    .prayer-name {
       font-size: 21px;
       font-weight: 700;
       color: #FFFFFF;
       white-space: nowrap;
-      text-shadow: 0 0 3px rgba(0, 0, 0, 0.95), 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .prayer-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #FFFFFF;
+      white-space: nowrap;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
     }
 
     .clock-value {
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 800;
       color: #FFFFFF;
       direction: ltr;
-      text-shadow: 0 0 3px rgba(0, 0, 0, 0.95), 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
     }
   </style>
 </head>
