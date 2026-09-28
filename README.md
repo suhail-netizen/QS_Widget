@@ -31,6 +31,16 @@ On Fridays, the Dhuhr slot automatically relabels itself **الجمعة** (Jumu'
 since Jumu'ah replaces Dhuhr at the same calculated time rather than having its
 own separate time.
 
+### Alternative layout: horizontal strip
+
+`Quran_TV_bar.html` and `Sunnah_TV_bar.html` are the same widget with a
+different layout: a single horizontal line placed directly below the channel's
+lower-middle box (same width as that box, ~26px tall at 1080p) instead of the
+badge beside the clock. Same logic, same data files, same scenes — only the
+CSS layout differs. Read right to left: label, prayer name, time
+(e.g. `متبقي من الوقت لأذان  العصر  00:34`). The main badge versions are
+unchanged; use whichever layout suits the channel.
+
 ## How it works
 
 - **No live internet calls at broadcast time.** Prayer times are pre-fetched and
