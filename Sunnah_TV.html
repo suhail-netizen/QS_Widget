@@ -61,6 +61,11 @@
       transform: translateX(-16px);
     }
 
+    /* No time shown (athan window): centre the prayer name under the top line */
+    .clock-widget.no-time .row2 {
+      transform: translateX(-8px);
+    }
+
     .prayer-name {
       font-size: 19px;
       font-weight: 700;
@@ -94,9 +99,12 @@
     // from a public API at broadcast time.
     const DATA_FILES = ['madinah_1448.json', 'madinah_1449.json'];
 
+    const PRAYER_WINDOW_MS = 30 * 60 * 1000;   // "وقت صلاة" shown this long after each athan
+
     const PRAYER_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     const PRAYER_NAMES = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 
+    const widgetEl = document.getElementById('widget');
     const labelTopEl = document.getElementById('labelTop');
     const labelEl = document.getElementById('prayerLabel');
     const valueEl = document.getElementById('clockValue');
@@ -179,7 +187,24 @@
       return schedule.find(p => p.date.getTime() > now) || null;
     }
 
+    // From athan time until 30 minutes after it, show "وقت صلاة <name>" with no time.
+    function getPrayerInProgress() {
+      const now = Date.now();
+      return schedule.find(p => now >= p.date.getTime() && now < p.date.getTime() + PRAYER_WINDOW_MS) || null;
+    }
+
     function render() {
+      const inProgress = getPrayerInProgress();
+      if (inProgress) {
+        labelTopEl.textContent = 'وقت صلاة';
+        labelEl.textContent = inProgress.label;
+        valueEl.style.display = 'none';
+        widgetEl.classList.add('no-time');
+        return;
+      }
+      valueEl.style.display = '';
+      widgetEl.classList.remove('no-time');
+
       const next = getNextPrayer();
       if (!next) {
         labelTopEl.textContent = '';

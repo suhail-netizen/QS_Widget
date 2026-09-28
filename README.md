@@ -22,6 +22,11 @@ It alternates every **10 seconds** between two scenes:
 1. **متبقي من الوقت لأذان** — prayer name + countdown remaining (e.g. `العصر 00:34`)
 2. **وقت أذان** — prayer name + the prayer's actual clock time (e.g. `العصر 15:41`)
 
+From each athan until **30 minutes after it**, the badge stops alternating and
+shows only **وقت صلاة** with the prayer name below it (e.g. `وقت صلاة / الظهر`),
+with no time. After 30 minutes it returns to the two scenes above, counting down
+to the following prayer. The window length is `PRAYER_WINDOW_MS` in each file.
+
 On Fridays, the Dhuhr slot automatically relabels itself **الجمعة** (Jumu'ah),
 since Jumu'ah replaces Dhuhr at the same calculated time rather than having its
 own separate time.
