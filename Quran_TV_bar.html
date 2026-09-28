@@ -19,13 +19,14 @@
       overflow: hidden;
     }
 
-    /* Horizontal-strip layout: one line directly below the channel's lower-middle
-       box. Measured on the 1920x1080 frame: that box spans x=658-1247, y=959-1049,
-       leaving about 26px beneath it. The strip is the same width as the box.
+    /* Horizontal-strip layout: one line along the bottom, centred between the
+       date box (right edge x=383) and the clock badge (left edge x=1610) on the
+       1920x1080 frame: midpoint x=996.5. The gold lower-middle box above spans
+       y=959-1049, leaving about 26px beneath it; the strip is 589px wide.
        Reading order (right to left): label, prayer name, time. */
     .clock-widget {
       position: fixed;
-      left: 658px;
+      left: 702px;
       width: 589px;
       bottom: 2px;
       height: 26px;
